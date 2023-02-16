@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "972223334736",
+    "project_id": "licenta-e0111",
+    "storage_bucket": "licenta-e0111.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:972223334736:android:15c975d6f32d9b0c6dc455",
+        "android_client_info": {
+          "package_name": "com.vidreanaurel.licenta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "972223334736-dlgl6d60679gscpnaqd02566l93gbn1v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3Xqe4azXxRNSZYlJRbV1yYuf6WNOuzA0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "972223334736-dlgl6d60679gscpnaqd02566l93gbn1v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

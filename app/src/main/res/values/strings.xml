@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">Licenta</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_audio">AudioActivity</string>
+
+    <string name="alt_threshold_button_plus">Increasing threshold of detected sound
+        results button</string>
+    <string name="alt_threshold_button_minus">Decreasing threshold of detected sound
+        results button</string>
+    <string name="alt_bottom_sheet_chevron">Bottom sheet expandable indicator</string>
+    <string name="alt_bottom_sheet_thread_button_minus">Decrease the number of threads used</string>
+    <string name="alt_bottom_sheet_thread_button_plus">Increase the number of threads used</string>
+
+    <string name="label_interence_time">Inference Time</string>
+    <string name="label_confidence_threshold">Threshold</string>
+    <string name="label_delegate">Delegate</string>
+    <string name="label_max_results">Max results</string>
+    <string name="label_overlap">Overlap</string>
+    <string name="label_threads">Threads</string>
+
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string-array name="overlap_spinner_titles">
+        <item>0%</item>
+        <item>25%</item>
+        <item>50%</item>
+        <item>75%</item>
+    </string-array>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string-array name="delegate_spinner_titles">
+        <item>CPU</item>
+        <item>NNAPI</item>
+    </string-array>
+</resources>
