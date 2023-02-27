@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout android:id="@+id/audio_container"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/audio_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -10,26 +10,36 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    <com.google.android.gms.maps.MapView
-        android:id="@+id/map_view"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:visibility="visible"
-        />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/map_view"
+            android:layout_margin="@dimen/margin_default"
+            android:scrollbars="vertical"
+            android:visibility="visible"
+            app:layoutManager="LinearLayoutManager"
+            tools:itemCount="2"
+            tools:listitem="@layout/item_probability" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/margin_default"
-        android:scrollbars="vertical"
-        android:visibility="visible"
-        android:layout_below="@id/map_view"
-        app:layoutManager="LinearLayoutManager"
-        tools:itemCount="2"
-        tools:listitem="@layout/item_probability" />
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/map_view"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:visibility="visible" />
+
+        <TextView
+            android:id="@+id/dbTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/recycler_view"
+            android:gravity="center"
+            android:visibility="invisible"
+            android:textSize="20sp"
+            tools:text="decibel"/>
 
     </RelativeLayout>
+
     <include
         android:id="@+id/bottom_sheet_layout"
         layout="@layout/controls_bottom_sheet" />

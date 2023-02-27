@@ -1,11 +1,12 @@
 package com.vidreanaurel.licenta.fragments
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.media.MediaRecorder
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,16 +14,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -33,6 +37,9 @@ import com.vidreanaurel.licenta.adapters.ProbabilitiesAdapter
 import com.vidreanaurel.licenta.databinding.FragmentMainBinding
 import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
 import org.tensorflow.lite.support.label.Category
+import java.io.IOException
+import kotlin.math.exp
+import kotlin.math.log10
 
 interface AudioClassificationListener {
     fun onError(error: String)
@@ -50,8 +57,18 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
     private var _fragmentBinding: FragmentMainBinding? = null
     private val fragmentMainBinding get() = _fragmentBinding!!
 
+    private var mediaRecorder: MediaRecorder? = null
+    private lateinit var decibelTextView: TextView
+
     private lateinit var recyclerView: RecyclerView
-    
+
+    var runner: Thread? = null
+    private var mEMA = 0.0
+    private val EMA_FILTER = 0.6
+
+    val updater = Runnable { updateTv() }
+    val mHandler: Handler = Handler()
+
     private val audioClassificationListener = object : AudioClassificationListener {
         override fun onResult(results: List<Category>, inferenceTime: Long) {
             requireActivity().runOnUiThread {
@@ -71,6 +88,26 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (runner == null) {
+            runner = object : Thread() {
+                override fun run() {
+                    while (runner != null) {
+                        try {
+                            sleep(1000)
+                            Log.i("Noise", "Tock")
+                        } catch (_: InterruptedException) {
+                        }
+                        mHandler.post(updater)
+                    }
+                }
+            }
+            (runner as Thread).start()
+            Log.d("Noise", "start runner()")
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -84,6 +121,9 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
         mapView = fragmentMainBinding.mapView
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
+
+        decibelTextView = fragmentMainBinding.dbTV
+
         return fragmentMainBinding.root
     }
 
@@ -221,12 +261,19 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
             0,
             false
         )
+
+//
+//        val db = 20 * log10(getAmplitude() / 10* exp(-7f))
+//
+//
+//        decibelTextView.text = db.toString()
     }
 
     override fun onResume() {
         super.onResume()
-       mapView.onResume()
-        if (::audioHelper.isInitialized ) {
+        startRecorder()
+        mapView.onResume()
+        if (::audioHelper.isInitialized) {
             audioHelper.startAudioClassification()
         }
     }
@@ -234,7 +281,8 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
     override fun onPause() {
         super.onPause()
         mapView.onPause()
-        if (::audioHelper.isInitialized ) {
+        stopRecorder()
+        if (::audioHelper.isInitialized) {
             audioHelper.stopAudioClassification()
         }
     }
@@ -251,7 +299,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
     }
 
 
-
     companion object {
         fun newInstance(): MainFragment {
             return MainFragment()
@@ -265,33 +312,35 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
     }
 
     fun setMarkerOnMap(a: Double, b: Double) {
-        mMap.addMarker(MarkerOptions().position(LatLng(a, b)).title("Marker in Your " + "Location"))
+        mMap.addMarker(MarkerOptions().position(LatLng(a, b)).title(String.format("%.1f", soundDb())))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(a, b)))
         mMap.animateCamera(CameraUpdateFactory.zoomTo(12f))
     }
 
     private fun getCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED) {
+            PackageManager.PERMISSION_GRANTED
+        ) {
             if (isGPSEnabled()) {
-                LocationServices.getFusedLocationProviderClient(requireActivity()).requestLocationUpdates(locationRequest, object: LocationCallback() {
-                    override fun onLocationResult(locationResult: LocationResult) {
-                        super.onLocationResult(locationResult)
+                LocationServices.getFusedLocationProviderClient(requireActivity())
+                    .requestLocationUpdates(locationRequest, object : LocationCallback() {
+                        override fun onLocationResult(locationResult: LocationResult) {
+                            super.onLocationResult(locationResult)
 
-                        LocationServices.getFusedLocationProviderClient(requireActivity()).removeLocationUpdates(this)
+                            LocationServices.getFusedLocationProviderClient(requireActivity()).removeLocationUpdates(this)
 
-                        if (locationResult.locations.size > 0) {
-                            val index = locationResult.locations.size - 1
-                            val latitude = locationResult.locations[index].latitude
-                            val longitude = locationResult.locations[index].longitude
+                            if (locationResult.locations.size > 0) {
+                                val index = locationResult.locations.size - 1
+                                val latitude = locationResult.locations[index].latitude
+                                val longitude = locationResult.locations[index].longitude
 
-                            val latLng = LatLng(latitude, longitude)
-                            Log.d("position2", "${latLng.latitude} ${latLng.longitude}")
-                            setMarkerOnMap(latitude, longitude)
+                                val latLng = LatLng(latitude, longitude)
+                                Log.d("position2", "${latLng.latitude} ${latLng.longitude}")
+                                setMarkerOnMap(latitude, longitude)
+                            }
                         }
-                    }
 
-                }, Looper.getMainLooper())
+                    }, Looper.getMainLooper())
             } else {
                 turnOnGPS()
             }
@@ -311,12 +360,12 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
     }
 
     private fun turnOnGPS() {
-        val builder: LocationSettingsRequest.Builder  = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val builder: LocationSettingsRequest.Builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
         builder.setAlwaysShow(true)
 
         val result: Task<LocationSettingsResponse> = LocationServices.getSettingsClient(requireContext()).checkLocationSettings(builder.build())
 
-        result.addOnCompleteListener(object: OnCompleteListener<LocationSettingsResponse> {
+        result.addOnCompleteListener(object : OnCompleteListener<LocationSettingsResponse> {
             override fun onComplete(task: Task<LocationSettingsResponse>) {
 
                 try {
@@ -343,8 +392,64 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
 
     override fun onMarkerClick(p0: Marker): Boolean {
         recyclerView.visibility = View.VISIBLE
+        decibelTextView.visibility = View.VISIBLE
         return true
     }
 
+    fun startRecorder() {
+        if (mediaRecorder == null) {
+            mediaRecorder = MediaRecorder()
+
+            mediaRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
+            mediaRecorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            mediaRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            mediaRecorder?.setOutputFile("${requireActivity().externalCacheDir?.absolutePath}/test.3gp")
+            try {
+                mediaRecorder?.prepare()
+            } catch (ioe: IOException) {
+                Log.e("[Monkey]", "IOException: " + Log.getStackTraceString(ioe))
+            } catch (e: SecurityException) {
+                Log.e("[Monkey]", "SecurityException: " + Log.getStackTraceString(e))
+            }
+            try {
+                mediaRecorder?.start()
+            } catch (e: SecurityException) {
+                Log.e("[Monkey]", "SecurityException: " + Log.getStackTraceString(e))
+            }
+
+            //mEMA = 0.0;
+        }
+    }
+
+    fun stopRecorder() {
+        if (mediaRecorder != null) {
+            mediaRecorder!!.stop()
+            mediaRecorder!!.release()
+            mediaRecorder = null
+        }
+    }
+
+    fun soundDb(): Double {
+        return 20 * log10(getAmplitude() / 32767) * (-1)
+    }
+
+    fun getAmplitude(): Double {
+        return if (mediaRecorder != null) {
+            mediaRecorder!!.maxAmplitude.toDouble()
+        } else {
+            0.toDouble()
+        }
+    }
+
+    fun getAmplitudeEMA(): Double {
+        val amp: Double = getAmplitude()
+        mEMA = EMA_FILTER * amp + (1.0 - EMA_FILTER) * mEMA
+        return mEMA
+    }
+
+    fun updateTv() {
+        decibelTextView.text = String.format("%.1f", soundDb())
+
+    }
 
 }
