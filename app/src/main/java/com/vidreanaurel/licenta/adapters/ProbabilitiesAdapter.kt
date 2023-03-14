@@ -21,7 +21,8 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val category = categoryList[position]
-        if (category.label.equals(CAR) || category.label.equals(MOTOR_VEHICLE)) {
+        if (category.label.equals(CAR) || category.label.equals(MOTOR_VEHICLE) || category.label.equals(CAR_PASSING_BY) || category.label.equals
+                (CAR_HORN) || category.label.equals(VEHICLE) || category.label.equals(ACCELERATING)) {
             holder.bind(CAR, category.score, category.index)
         }
         if (category.label.equals(SPEECH)) {
@@ -70,6 +71,10 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
     companion object {
         private const val CAR = "Car"
         private const val MOTOR_VEHICLE = "Motor vehicle (road)"
+        private const val CAR_PASSING_BY = "Car passing by"
+        private const val CAR_HORN = "Vehicle horn, car horn, honking"
+        private const val VEHICLE = "Vehicle"
+        private const val ACCELERATING = "Accelerating, revving, vroom"
         private const val SPEECH = "Speech"
     }
 }

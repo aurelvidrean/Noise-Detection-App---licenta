@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioRecord
 import android.os.SystemClock
 import android.util.Log
-import com.vidreanaurel.licenta.fragments.AudioClassificationListener
 
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit

@@ -22,14 +22,10 @@ import com.vidreanaurel.licenta.R
 import com.vidreanaurel.licenta.adapters.ProbabilitiesAdapter
 import com.vidreanaurel.licenta.databinding.FragmentMainBinding
 import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
+import com.vidreanaurel.licenta.helpers.AudioClassificationListener
 import com.vidreanaurel.licenta.helpers.SensorHelper
 import org.tensorflow.lite.support.label.Category
 import java.io.IOException
-
-interface AudioClassificationListener {
-    fun onError(error: String)
-    fun onResult(results: List<Category>, inferenceTime: Long)
-}
 
 class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener {
 
