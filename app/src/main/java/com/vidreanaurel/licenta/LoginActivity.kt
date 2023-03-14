@@ -67,4 +67,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
     }
+
+    fun getUserEmail(): String {
+        return email.text.toString().trim()
+    }
 }
