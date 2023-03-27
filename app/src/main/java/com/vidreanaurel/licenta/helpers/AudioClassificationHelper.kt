@@ -37,8 +37,7 @@ class AudioClassificationHelper(
 
     fun initClassifier() {
         // Set general detection options, e.g. number of used threads
-        val baseOptionsBuilder = BaseOptions.builder()
-            .setNumThreads(numThreads)
+        val baseOptionsBuilder = BaseOptions.builder().setNumThreads(numThreads)
 
         // Use the specified hardware for running the model. Default to CPU.
         // Possible to also use a GPU delegate, but this requires that the classifier be created
@@ -67,9 +66,7 @@ class AudioClassificationHelper(
             recorder = classifier.createAudioRecord()
             startAudioClassification()
         } catch (e: IllegalStateException) {
-            listener.onError(
-                "Audio Classifier failed to initialize. See error logs for details"
-            )
+            listener.onError("Audio Classifier failed to initialize. See error logs for details")
 
             Log.e("AudioClassification", "TFLite failed to load with error: " + e.message)
         }
@@ -119,6 +116,5 @@ class AudioClassificationHelper(
         const val DEFAULT_NUM_OF_RESULTS = 2
         const val DEFAULT_OVERLAP_VALUE = 0.5f
         const val YAMNET_MODEL = "yamnet.tflite"
-        const val SPEECH_COMMAND_MODEL = "speech.tflite"
     }
 }

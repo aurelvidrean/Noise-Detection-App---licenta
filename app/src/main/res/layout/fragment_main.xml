@@ -15,11 +15,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/map_view"
-            android:layout_margin="@dimen/margin_default"
+            android:layout_marginBottom="@dimen/margin_default"
+            android:layout_marginEnd="@dimen/margin_default"
+            android:layout_marginStart="@dimen/margin_default"
+            android:layout_marginTop="@dimen/margin_default"
             android:scrollbars="vertical"
             android:visibility="visible"
             app:layoutManager="LinearLayoutManager"
-            tools:itemCount="2"
+            tools:itemCount="3"
             tools:listitem="@layout/item_probability" />
 
         <com.google.android.gms.maps.MapView
@@ -34,10 +37,18 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/recycler_view"
             android:gravity="center"
+            android:layout_marginStart="@dimen/margin_default"
             android:visibility="invisible"
             android:textSize="20sp"
             tools:visibility="visible"
             tools:text="decibel"/>
+
+        <Button
+            android:id="@+id/logoutbtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/dbTV"
+            android:text="logout"/>
 
     </RelativeLayout>
 
