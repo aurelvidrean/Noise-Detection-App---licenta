@@ -47,8 +47,8 @@ class AudioClassificationHelper(
             DELEGATE_CPU -> {
                 // Default
             }
-            DELEGATE_NNAPI -> {
-                baseOptionsBuilder.useNnapi()
+            DELEGATE_GPU -> {
+                baseOptionsBuilder.useGpu()
             }
         }
 
@@ -111,7 +111,7 @@ class AudioClassificationHelper(
 
     companion object {
         const val DELEGATE_CPU = 0
-        const val DELEGATE_NNAPI = 1
+        const val DELEGATE_GPU = 1
         const val DISPLAY_THRESHOLD = 0.3f
         const val DEFAULT_NUM_OF_RESULTS = 2
         const val DEFAULT_OVERLAP_VALUE = 0.5f

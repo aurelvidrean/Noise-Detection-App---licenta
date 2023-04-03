@@ -6,6 +6,7 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.core.app.ActivityCompat
 import kotlin.math.log10
+import kotlin.math.sqrt
 
 class SoundLevelMeter(private val listener: Listener) {
 
@@ -62,13 +63,12 @@ class SoundLevelMeter(private val listener: Listener) {
             sum += buffer[i] * buffer[i]
         }
         val mean = sum / buffer.size
-        return Math.sqrt(mean)
+        return sqrt(mean)
     }
 
     private fun calculateSPL(rms: Double): Double {
         val refPressure = 20e-6 // reference sound pressure in Pascals
-        val spl = 20 * log10(rms / refPressure)
-        return spl
+        return 20 * log10(rms / refPressure)
     }
 
     interface Listener {

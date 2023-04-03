@@ -12,6 +12,8 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
@@ -230,10 +232,19 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
         return true
     }
 
+    var x = 0.0
+
     override fun onSPLMeasured(spl: Double) {
+
         requireActivity().runOnUiThread {
             decibelTextView.text = String.format("%.1f dB", spl)
+            if (spl > x) {
+                x = spl
+            }
         }
+        val userConnected = FirebaseAuth.getInstance().currentUser?.email.toString().substringBefore("@")
+        val database = FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(userConnected)
+        database.child("soundLevel").setValue(String.format("%.1f dB", x))
     }
 
     companion object {

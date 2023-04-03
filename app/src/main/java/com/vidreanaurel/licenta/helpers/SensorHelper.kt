@@ -1,38 +1,27 @@
 package com.vidreanaurel.licenta.helpers
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.LocationManager
-import android.media.MediaRecorder
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.requestPermissions
-import androidx.core.content.ContentProviderCompat.requireContext
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.*
 import com.google.firebase.database.*
-import com.google.firebase.database.ktx.getValue
-import com.vidreanaurel.licenta.LoginActivity
-import java.io.IOException
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.math.log10
+
 
 class SensorHelper {
 
@@ -63,12 +52,16 @@ class SensorHelper {
 
                                 val latLng = LatLng(latitude, longitude)
                                 Log.d("position2", "${latLng.latitude} ${latLng.longitude}")
-                                val userConnected = FirebaseAuth.getInstance().currentUser?.uid.toString()
-                                val database = FirebaseDatabase.getInstance("https://licenta-e0111-default-rtdb.europe-west1.firebasedatabase" +
-                                        ".app/").getReference(userConnected).child("Location")
-                                database.child("latitude").setValue(latitude)
-                                database.child("longitude").setValue(longitude)
-                                setMarkerOnMap(map, latitude, longitude)
+                                val coordinates = ArrayList<Double>()
+                                coordinates.add(latitude)
+                                coordinates.add(longitude)
+                                if (FirebaseAuth.getInstance().currentUser != null) {
+                                    val userConnected = FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@")
+                                    val database = userConnected?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it)}
+                                    database?.child("LatLng")?.setValue(coordinates)
+                                    //database.child("longitude").setValue(longitude)
+                                }
+                                setMarkerOnMap(map)
                             }
                         }
 
@@ -77,7 +70,7 @@ class SensorHelper {
                 turnOnGPS(activity, locationRequest)
             }
         } else {
-            requestPermissions(activity, arrayOf( android.Manifest.permission.ACCESS_FINE_LOCATION), 1);
+            requestPermissions(activity, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 1);
         }
     }
 
@@ -122,31 +115,77 @@ class SensorHelper {
         })
     }
 
-    fun setMarkerOnMap(mMap: GoogleMap, a: Double, b: Double) {
-        mMap.addMarker(MarkerOptions().position(LatLng(a, b)).title("Marker").icon(getMarkerColorByDBLevel()))
-       // getData(mMap)
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(a, b)))
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(12f))
+    fun setMarkerOnMap(mMap: GoogleMap) {
+        //mMap.addMarker(MarkerOptions().position(LatLng(a, b)).title("Marker").icon(getMarkerColorByDBLevel()))
+        getData(mMap)
     }
-//    private fun getData(map: GoogleMap) {
-//        val databaseReference = FirebaseDatabase.getInstance("https://licenta-e0111-default-rtdb.europe-west1.firebasedatabase.app/").getReference("Location")
-//        databaseReference.addValueEventListener(object : ValueEventListener {
-//            override fun onDataChange(snapshot: DataSnapshot) {
-//                var lat = snapshot.child("latitude").value.toString().substringAfter("=")
-//                var long = snapshot.child("longitude").value.toString().substringAfter("=")
-//                var stringLat = lat.split(", ")
-//                var stringLong = long.split(", ")
-//                var latitude = stringLat[stringLat.size - 1].substring(0, lat.length - 1).toDouble()
-//                var longitude = stringLong[stringLong.size - 1].substring(0, long.length - 1).toDouble()
-//                map.addMarker(MarkerOptions().position(LatLng(latitude, longitude)).title("Marker").icon(getMarkerColorByDBLevel()))
-//            }
-//
-//            override fun onCancelled(error: DatabaseError) {
-//                TODO("Not yet implemented")
-//            }
-//
-//        })
-//    }
+
+    private fun getData(map: GoogleMap) {
+        val dbRef = FirebaseDatabase.getInstance(DB_URL).getReference("User")
+        for (i in 1..4) {
+            val ref = dbRef.child("test$i")
+            ref.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val latLng = snapshot.child("LatLng").value
+                        Log.d("DOAMNE AJUTA", latLng.toString())
+                        if (latLng != null) {
+                            val latitude = (latLng as ArrayList<*>)[0]
+                            val longitude = (latLng as ArrayList<*>)[1]
+                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
+                            map.addMarker(MarkerOptions().position(marker).title("Marker").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)))
+                            drawCircle(marker, map)
+                            //map.animateCamera(CameraUpdateFactory.zoomTo(12f))
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+        }
+        val currentUser = FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@")
+        if (currentUser != null) {
+            val ref = dbRef.child(currentUser)
+            ref.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val latLng = snapshot.child("LatLng").value
+                        Log.d("DOAMNE AJUTA", latLng.toString())
+                        if (latLng != null) {
+                            val latitude = (latLng as ArrayList<*>)[0]
+                            val longitude = (latLng as ArrayList<*>)[1]
+                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
+                            map.addMarker(
+                                MarkerOptions().position(marker).title("Marker")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
+                            )
+                            drawCircle(marker, map)
+                            map.animateCamera(CameraUpdateFactory.zoomTo(12f))
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+        }
+    }
+
+    private fun drawCircle(point: LatLng, map: GoogleMap) {
+        // Instantiating CircleOptions to draw a circle around the marker
+        val circleOptions = CircleOptions()
+        circleOptions.center(point)
+        circleOptions.radius(300.0)
+        circleOptions.strokeColor(Color.BLACK)
+        circleOptions.fillColor(Color.YELLOW)
+        circleOptions.strokeWidth(2f)
+        map.addCircle(circleOptions)
+    }
 
     fun getMarkerColorByDBLevel(): BitmapDescriptor {
         return when {
@@ -156,6 +195,10 @@ class SensorHelper {
             (dbLevel <= 150) -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)
             else -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
         }
+    }
+
+    companion object {
+        const val DB_URL = "https://licenta-e0111-default-rtdb.europe-west1.firebasedatabase.app/"
     }
 
 }

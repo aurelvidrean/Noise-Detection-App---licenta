@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Licenta</string>
+    <string name="app_name">Opportunistic sensing systems</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -38,6 +38,6 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string-array name="delegate_spinner_titles">
         <item>CPU</item>
-        <item>NNAPI</item>
+        <item>GPU</item>
     </string-array>
 </resources>
