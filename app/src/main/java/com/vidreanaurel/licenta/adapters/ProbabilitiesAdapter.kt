@@ -1,23 +1,19 @@
 package com.vidreanaurel.licenta.adapters
 
 import android.content.res.ColorStateList
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.vidreanaurel.licenta.R
 import com.vidreanaurel.licenta.databinding.ItemProbabilityBinding
 import com.vidreanaurel.licenta.helpers.SensorHelper
 import org.tensorflow.lite.support.label.Category
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.collections.HashMap
 
 class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolder>() {
     var categoryList: List<Category> = emptyList()
@@ -33,14 +29,25 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
         if (category.label.equals(CAR) || category.label.equals(MOTOR_VEHICLE) || category.label.equals(CAR_PASSING_BY) || category.label.equals
                 (CAR_HORN) || category.label.equals(VEHICLE) || category.label.equals(ACCELERATING)) {
             holder.bind(CAR, category.score, category.index)
-            if (FirebaseAuth.getInstance().currentUser != null) {
-                val userConnected = FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@")
-                val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it)}
-                database?.child("CarDetection")?.setValue(category.index)
-            }
+            val carDetectionEvent: HashMap<String, String> = HashMap()
+            val currentDate = Date()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val formattedDate = dateFormat.format(currentDate)
+            carDetectionEvent[CAR] = formattedDate
+            val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+            val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+            database?.child("CarDetection")?.setValue(carDetectionEvent)
         }
         if (category.label.equals(SPEECH)) {
             holder.bind(SPEECH, category.score, category.index)
+            val personDetectionEvent: HashMap<String, String> = HashMap()
+            val currentDate = Date()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val formattedDate = dateFormat.format(currentDate)
+            personDetectionEvent[SPEECH] = formattedDate
+            val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+            val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+            database?.child("PersonDetection")?.setValue(personDetectionEvent)
         }
     }
 

@@ -242,9 +242,9 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
                 x = spl
             }
         }
-        val userConnected = FirebaseAuth.getInstance().currentUser?.email.toString().substringBefore("@")
-        val database = FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(userConnected)
-        database.child("soundLevel").setValue(String.format("%.1f dB", x))
+        val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+        val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+        database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
     }
 
     companion object {

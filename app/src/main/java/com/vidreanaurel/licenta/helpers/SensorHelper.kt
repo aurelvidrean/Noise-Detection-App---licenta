@@ -19,8 +19,12 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.*
-import com.google.firebase.database.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.functions.FirebaseFunctions
 
 
 class SensorHelper {
@@ -56,10 +60,9 @@ class SensorHelper {
                                 coordinates.add(latitude)
                                 coordinates.add(longitude)
                                 if (FirebaseAuth.getInstance().currentUser != null) {
-                                    val userConnected = FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@")
-                                    val database = userConnected?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it)}
+                                    val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+                                    val database = userConnected?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
                                     database?.child("LatLng")?.setValue(coordinates)
-                                    //database.child("longitude").setValue(longitude)
                                 }
                                 setMarkerOnMap(map)
                             }
@@ -121,59 +124,89 @@ class SensorHelper {
     }
 
     private fun getData(map: GoogleMap) {
-        val dbRef = FirebaseDatabase.getInstance(DB_URL).getReference("User")
-        for (i in 1..4) {
-            val ref = dbRef.child("test$i")
-            ref.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        val latLng = snapshot.child("LatLng").value
-                        Log.d("DOAMNE AJUTA", latLng.toString())
-                        if (latLng != null) {
-                            val latitude = (latLng as ArrayList<*>)[0]
-                            val longitude = (latLng as ArrayList<*>)[1]
-                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
-                            map.addMarker(MarkerOptions().position(marker).title("Marker").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)))
-                            drawCircle(marker, map)
-                            //map.animateCamera(CameraUpdateFactory.zoomTo(12f))
+        val functions = FirebaseFunctions.getInstance()
+        val getAllUsers = functions.getHttpsCallable("getAllUsers")
+
+        val userList: MutableList<String> = mutableListOf()
+
+        getAllUsers.call()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val result = task.result?.data as List<HashMap<String, String>>?
+                    if (result != null) {
+                        var i = 0
+                        for (user in result) {
+                            val uid = user["uid"] as String?
+                            val email = user["email"] as String?
+                            Log.d("TAG", "User ID: $uid")
+                            Log.d("TAG", "Email: $email")
+                            if (user["uid"]?.equals(FirebaseAuth.getInstance().currentUser?.uid) == true) {
+                                locateUser(user["uid"], map, true)
+                            } else {
+                                locateUser(user["uid"], map, false)
+                            }
+
+//                            val dbRef = user["uid"]?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
+//                            dbRef?.addValueEventListener(object : ValueEventListener {
+//                                override fun onDataChange(snapshot: DataSnapshot) {
+//                                    if (snapshot.exists()) {
+//                                        val latLng = snapshot.child("LatLng").value
+//                                        Log.d("DOAMNE AJUTA", latLng.toString())
+//                                        if (latLng != null) {
+//                                            val latitude = (latLng as ArrayList<*>)[0]
+//                                            val longitude = (latLng as ArrayList<*>)[1]
+//                                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
+//                                            map.addMarker(
+//                                                MarkerOptions().position(marker).title("Marker")
+//                                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
+//                                            )
+//                                            drawCircle(marker, map)
+//                                            //map.animateCamera(CameraUpdateFactory.zoomTo(12f))
+//                                        }
+//                                    }
+//                                }
+//
+//                                override fun onCancelled(error: DatabaseError) {
+//                                    TODO("Not yet implemented")
+//                                }
+//                            })
+                        }
+                    }
+                } else {
+                    Log.e("TAG", "Error getting all users: ", task.exception)
+                }
+            }
+    }
+
+    private fun locateUser(userId: String?, map: GoogleMap, isCurrentUser: Boolean) {
+        val dbRef = userId?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
+        dbRef?.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val latLng = snapshot.child("LatLng").value
+                    Log.d("DOAMNE AJUTA", latLng.toString())
+                    if (latLng != null) {
+                        val latitude = (latLng as ArrayList<*>)[0]
+                        val longitude = (latLng as ArrayList<*>)[1]
+                        val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
+                        map.addMarker(
+                            MarkerOptions().position(marker).title("Marker")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
+                        )
+                        drawCircle(marker, map)
+                        if (isCurrentUser) {
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,12f));
+                            map.animateCamera(CameraUpdateFactory.zoomIn());
+                            map.animateCamera(CameraUpdateFactory.zoomTo(12f), 2000, null);
                         }
                     }
                 }
+            }
 
-                override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
-                }
-
-            })
-        }
-        val currentUser = FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@")
-        if (currentUser != null) {
-            val ref = dbRef.child(currentUser)
-            ref.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        val latLng = snapshot.child("LatLng").value
-                        Log.d("DOAMNE AJUTA", latLng.toString())
-                        if (latLng != null) {
-                            val latitude = (latLng as ArrayList<*>)[0]
-                            val longitude = (latLng as ArrayList<*>)[1]
-                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
-                            map.addMarker(
-                                MarkerOptions().position(marker).title("Marker")
-                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
-                            )
-                            drawCircle(marker, map)
-                            map.animateCamera(CameraUpdateFactory.zoomTo(12f))
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
-                }
-
-            })
-        }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
     }
 
     private fun drawCircle(point: LatLng, map: GoogleMap) {
