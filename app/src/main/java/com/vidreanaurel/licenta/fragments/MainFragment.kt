@@ -9,32 +9,32 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
+import java.util.ArrayList
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import com.google.firebase.database.ktx.database
-import com.google.firebase.database.ktx.getValue
-import com.google.firebase.ktx.Firebase
-import com.vidreanaurel.licenta.MainActivity
+import com.vidreanaurel.licenta.DetailsViewModel
+import com.vidreanaurel.licenta.R
+
 import com.vidreanaurel.licenta.RegisterActivity
+import com.vidreanaurel.licenta.adapters.ListItemAdapter
 import com.vidreanaurel.licenta.adapters.ProbabilitiesAdapter
 import com.vidreanaurel.licenta.databinding.FragmentMainBinding
 import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
 import com.vidreanaurel.licenta.helpers.AudioClassificationListener
 import com.vidreanaurel.licenta.helpers.SensorHelper
+import com.vidreanaurel.licenta.models.UserDetails
 import org.tensorflow.lite.support.label.Category
 
 class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, SoundLevelMeter.Listener {
@@ -54,13 +54,21 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
 
     lateinit var logoutbutton: Button
 
+    private val viewModel by lazy {
+        ViewModelProvider(this)[DetailsViewModel::class.java]
+    }
+
+    private lateinit var recyclerView2: RecyclerView
+
     private val audioClassificationListener = object : AudioClassificationListener {
         override fun onResult(results: List<Category>, inferenceTime: Long) {
-            requireActivity().runOnUiThread {
-                adapter.categoryList = results
-                adapter.notifyDataSetChanged()
-                fragmentMainBinding.bottomSheetLayout.inferenceTimeVal.text =
-                    String.format("%d ms", inferenceTime)
+            if (isAdded) {
+                requireActivity().runOnUiThread {
+                    adapter.categoryList = results
+                    adapter.notifyDataSetChanged()
+                    fragmentMainBinding.bottomSheetLayout.inferenceTimeVal.text =
+                        String.format("%d ms", inferenceTime)
+                }
             }
         }
 
@@ -93,7 +101,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
             FirebaseAuth.getInstance().signOut()
             startActivity(Intent(requireContext(), RegisterActivity::class.java))
         }
-
         return fragmentMainBinding.root
     }
 
@@ -107,6 +114,31 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
         audioHelper.stopAudioClassification()
         audioHelper.currentModel = AudioClassificationHelper.YAMNET_MODEL
         audioHelper.initClassifier()
+
+        viewModel.getUserDetails()
+
+        val detailsAdapter = ListItemAdapter()
+
+        recyclerView2 = fragmentMainBinding.recyclerView2
+        recyclerView2.adapter = detailsAdapter
+        recyclerView2.layoutManager = LinearLayoutManager(view.context)
+
+
+        viewModel.userDetailsList.observe(viewLifecycleOwner) { userDetails ->
+            if (userDetails != null) {
+                detailsAdapter.userDetailsList = userDetails.distinctBy { it.email }
+                detailsAdapter.notifyDataSetChanged()
+            } else {
+                detailsAdapter.userDetailsList = emptyList()
+            }
+        }
+
+        val detailsButton = fragmentMainBinding.details
+
+        detailsButton.setOnClickListener {
+            recyclerView2.visibility = View.VISIBLE
+        }
+
 
         fragmentMainBinding.bottomSheetLayout.spinnerOverlap.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -235,11 +267,12 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
     var x = 0.0
 
     override fun onSPLMeasured(spl: Double) {
-
-        requireActivity().runOnUiThread {
-            decibelTextView.text = String.format("%.1f dB", spl)
-            if (spl > x) {
-                x = spl
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+                decibelTextView.text = String.format("%.1f dB", spl)
+                if (spl > x) {
+                    x = spl
+                }
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid

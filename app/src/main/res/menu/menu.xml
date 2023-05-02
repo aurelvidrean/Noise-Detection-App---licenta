@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:title="Map"
+        android:id="@+id/map"
+        android:icon="@drawable/ic_map"/>
+    <item
+        android:title="Details"
+        android:id="@+id/details"
+        android:icon="@drawable/vector"/>
+</menu>

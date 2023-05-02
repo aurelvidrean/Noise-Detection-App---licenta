@@ -40,4 +40,8 @@
         <item>CPU</item>
         <item>GPU</item>
     </string-array>
+
+    <string name="image_content_description" />
+    <string name="time_is_running">Time\'s running! %1$s</string>
+    <string name="get_back">Hey you! Get back! :]</string>
 </resources>

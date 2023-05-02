@@ -62,7 +62,9 @@ class SensorHelper {
                                 if (FirebaseAuth.getInstance().currentUser != null) {
                                     val userConnected = FirebaseAuth.getInstance().currentUser?.uid
                                     val database = userConnected?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
-                                    database?.child("LatLng")?.setValue(coordinates)
+                                    database?.child("LatLng")?.child("Latitude")?.setValue(coordinates[0])
+                                    database?.child("LatLng")?.child("Longitude")?.setValue(coordinates[1])
+                                    database?.child("Email")?.setValue(FirebaseAuth.getInstance().currentUser?.email)
                                 }
                                 setMarkerOnMap(map)
                             }
@@ -77,7 +79,7 @@ class SensorHelper {
         }
     }
 
-    fun isGPSEnabled(activity: Activity): Boolean {
+    private fun isGPSEnabled(activity: Activity): Boolean {
         val locationManager: LocationManager? = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager?
         var isEnabled = false
 
@@ -87,7 +89,7 @@ class SensorHelper {
         return isEnabled
     }
 
-    fun turnOnGPS(activity: Activity, locationRequest: LocationRequest) {
+    private fun turnOnGPS(activity: Activity, locationRequest: LocationRequest) {
         val builder: LocationSettingsRequest.Builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
         builder.setAlwaysShow(true)
 
@@ -134,7 +136,6 @@ class SensorHelper {
                 if (task.isSuccessful) {
                     val result = task.result?.data as List<HashMap<String, String>>?
                     if (result != null) {
-                        var i = 0
                         for (user in result) {
                             val uid = user["uid"] as String?
                             val email = user["email"] as String?
@@ -145,31 +146,6 @@ class SensorHelper {
                             } else {
                                 locateUser(user["uid"], map, false)
                             }
-
-//                            val dbRef = user["uid"]?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
-//                            dbRef?.addValueEventListener(object : ValueEventListener {
-//                                override fun onDataChange(snapshot: DataSnapshot) {
-//                                    if (snapshot.exists()) {
-//                                        val latLng = snapshot.child("LatLng").value
-//                                        Log.d("DOAMNE AJUTA", latLng.toString())
-//                                        if (latLng != null) {
-//                                            val latitude = (latLng as ArrayList<*>)[0]
-//                                            val longitude = (latLng as ArrayList<*>)[1]
-//                                            val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
-//                                            map.addMarker(
-//                                                MarkerOptions().position(marker).title("Marker")
-//                                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
-//                                            )
-//                                            drawCircle(marker, map)
-//                                            //map.animateCamera(CameraUpdateFactory.zoomTo(12f))
-//                                        }
-//                                    }
-//                                }
-//
-//                                override fun onCancelled(error: DatabaseError) {
-//                                    TODO("Not yet implemented")
-//                                }
-//                            })
                         }
                     }
                 } else {
@@ -183,21 +159,19 @@ class SensorHelper {
         dbRef?.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    val latLng = snapshot.child("LatLng").value
-                    Log.d("DOAMNE AJUTA", latLng.toString())
-                    if (latLng != null) {
-                        val latitude = (latLng as ArrayList<*>)[0]
-                        val longitude = (latLng as ArrayList<*>)[1]
-                        val marker = LatLng(latitude.toString().toDouble(), longitude.toString().toDouble())
+                    val latitude = snapshot.child("LatLng").child("Latitude").getValue(Double::class.java)
+                    val longitude = snapshot.child("LatLng").child("Longitude").getValue(Double::class.java)
+                    if (latitude != null && longitude != null) {
+                        val marker = LatLng(latitude, longitude)
                         map.addMarker(
                             MarkerOptions().position(marker).title("Marker")
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
                         )
                         drawCircle(marker, map)
                         if (isCurrentUser) {
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,12f));
-                            map.animateCamera(CameraUpdateFactory.zoomIn());
-                            map.animateCamera(CameraUpdateFactory.zoomTo(12f), 2000, null);
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,12f))
+                            map.animateCamera(CameraUpdateFactory.zoomIn())
+                            map.animateCamera(CameraUpdateFactory.zoomTo(12f), 2000, null)
                         }
                     }
                 }
