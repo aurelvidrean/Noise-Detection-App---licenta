@@ -39,7 +39,7 @@
             android:layout_below="@id/recycler_view"
             android:gravity="center"
             android:layout_marginStart="@dimen/margin_default"
-            android:visibility="invisible"
+            android:visibility="visible"
             android:textSize="20sp"
             tools:visibility="visible"
             tools:text="decibel"/>
@@ -50,21 +50,6 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/dbTV"
             android:text="logout"/>
-
-        <Button
-            android:id="@+id/details"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/dbTV"
-            android:layout_alignParentEnd="true"
-            android:text="See details"/>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/logoutbtn"
-            android:visibility="invisible"/>
 
     </RelativeLayout>
 

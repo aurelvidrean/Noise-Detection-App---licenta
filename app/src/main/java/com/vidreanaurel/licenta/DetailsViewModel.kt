@@ -23,6 +23,7 @@ class DetailsViewModel: ViewModel() {
         dbRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
+                    userList.clear()
                     snapshot.children.forEach {
                         val latitude = it.child("LatLng").child("Latitude").getValue(Double::class.java)
                         val longitude = it.child("LatLng").child("Longitude").getValue(Double::class.java)

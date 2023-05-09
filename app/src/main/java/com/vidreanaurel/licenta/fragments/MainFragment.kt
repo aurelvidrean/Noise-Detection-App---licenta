@@ -9,35 +9,25 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
-import java.util.ArrayList
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.Marker
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import com.vidreanaurel.licenta.DetailsViewModel
-import com.vidreanaurel.licenta.R
-
 import com.vidreanaurel.licenta.RegisterActivity
-import com.vidreanaurel.licenta.adapters.ListItemAdapter
 import com.vidreanaurel.licenta.adapters.ProbabilitiesAdapter
 import com.vidreanaurel.licenta.databinding.FragmentMainBinding
 import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
 import com.vidreanaurel.licenta.helpers.AudioClassificationListener
 import com.vidreanaurel.licenta.helpers.SensorHelper
-import com.vidreanaurel.licenta.models.UserDetails
 import org.tensorflow.lite.support.label.Category
 
-class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, SoundLevelMeter.Listener {
+class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
 
     private lateinit var mapView: MapView
     private lateinit var mMap: GoogleMap
@@ -53,12 +43,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
     private lateinit var soundLevelMeter: SoundLevelMeter
 
     lateinit var logoutbutton: Button
-
-    private val viewModel by lazy {
-        ViewModelProvider(this)[DetailsViewModel::class.java]
-    }
-
-    private lateinit var recyclerView2: RecyclerView
 
     private val audioClassificationListener = object : AudioClassificationListener {
         override fun onResult(results: List<Category>, inferenceTime: Long) {
@@ -108,36 +92,11 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
         super.onViewCreated(view, savedInstanceState)
         recyclerView = fragmentMainBinding.recyclerView
         recyclerView.adapter = adapter
-        recyclerView.visibility = View.INVISIBLE
         audioHelper = AudioClassificationHelper(requireContext(), audioClassificationListener)
 
         audioHelper.stopAudioClassification()
         audioHelper.currentModel = AudioClassificationHelper.YAMNET_MODEL
         audioHelper.initClassifier()
-
-        viewModel.getUserDetails()
-
-        val detailsAdapter = ListItemAdapter()
-
-        recyclerView2 = fragmentMainBinding.recyclerView2
-        recyclerView2.adapter = detailsAdapter
-        recyclerView2.layoutManager = LinearLayoutManager(view.context)
-
-
-        viewModel.userDetailsList.observe(viewLifecycleOwner) { userDetails ->
-            if (userDetails != null) {
-                detailsAdapter.userDetailsList = userDetails.distinctBy { it.email }
-                detailsAdapter.notifyDataSetChanged()
-            } else {
-                detailsAdapter.userDetailsList = emptyList()
-            }
-        }
-
-        val detailsButton = fragmentMainBinding.details
-
-        detailsButton.setOnClickListener {
-            recyclerView2.visibility = View.VISIBLE
-        }
 
 
         fragmentMainBinding.bottomSheetLayout.spinnerOverlap.onItemSelectedListener =
@@ -254,14 +213,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, OnMarkerClickListener, Soun
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap.setOnMarkerClickListener(this)
         SensorHelper().getCurrentLocation(requireActivity(), locationRequest, mMap)
-    }
-
-    override fun onMarkerClick(p0: Marker): Boolean {
-        recyclerView.visibility = View.VISIBLE
-        decibelTextView.visibility = View.VISIBLE
-        return true
     }
 
     var x = 0.0

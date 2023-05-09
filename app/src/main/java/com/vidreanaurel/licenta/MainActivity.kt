@@ -29,6 +29,9 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     private lateinit var bottomNavigationView: BottomNavigationView
 
+    private lateinit var mapFragment: MainFragment
+    private lateinit var detailsFragment: DetailsFragment
+
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 Toast.makeText(this, "Permission request granted", Toast.LENGTH_LONG).show()
@@ -42,6 +45,9 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mapFragment = MainFragment.newInstance()
+        detailsFragment = DetailsFragment.newInstance()
+        supportFragmentManager.beginTransaction().add(R.id.fragment_container, mapFragment).add(R.id.fragment_container, detailsFragment).hide(detailsFragment).commit()
         bottomNavigationView = findViewById(R.id.bottomnav)
         bottomNavigationView.setOnNavigationItemSelectedListener(this)
         when (PackageManager.PERMISSION_GRANTED) {
@@ -55,28 +61,21 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         }
 
         sendCommandToForegroundService(TimerState.START)
+
     }
 
     private fun navigateToAudioFragment() {
-        val fragment = MainFragment.newInstance()
-        supportFragmentManager.beginTransaction().add(R.id.fragment_container, fragment, "Main Fragment").commit()
+        supportFragmentManager.beginTransaction().hide(detailsFragment).show(mapFragment).commit()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        var fragment: Fragment? = null
         when (item.itemId) {
-            R.id.map -> fragment = MainFragment.newInstance()
-            R.id.details -> fragment = DetailsFragment.newInstance()
-        }
-        if (fragment != null) {
-            loadFragment(fragment)
+            R.id.map -> supportFragmentManager.beginTransaction().hide(detailsFragment).show(mapFragment).commit()
+            R.id.details -> supportFragmentManager.beginTransaction().hide(mapFragment).show(detailsFragment).commit()
         }
         return true
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction().replace(R.id.fragment_container, fragment).commit()
-    }
 
     // Foreground Service Methods
 
