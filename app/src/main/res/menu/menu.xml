@@ -8,4 +8,8 @@
         android:title="Details"
         android:id="@+id/details"
         android:icon="@drawable/vector"/>
+    <item
+        android:title="Charts"
+        android:id="@+id/charts"
+        android:icon="@drawable/ic_chart"/>
 </menu>

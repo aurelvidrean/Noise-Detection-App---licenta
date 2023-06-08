@@ -1,60 +1,35 @@
 import android.Manifest
-import android.app.Service
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Build
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.util.Log
 import androidx.core.app.ActivityCompat
-import com.vidreanaurel.licenta.R
-import com.vidreanaurel.licenta.TIMER_ACTION
-import com.vidreanaurel.licenta.adapters.secondsToTime
-import com.vidreanaurel.licenta.helpers.NotificationHelper
-import com.vidreanaurel.licenta.models.TimerState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.vidreanaurel.licenta.helpers.SensorHelper
+import com.vidreanaurel.licenta.models.CircularBuffer
+import java.util.Calendar
+import java.util.Timer
+import java.util.TimerTask
+import kotlin.math.ln
 import kotlin.math.log10
+import kotlin.math.pow
 import kotlin.math.sqrt
 
-
-const val SERVICE_COMMAND = "Command"
-const val NOTIFICATION_TEXT = "NotificationText"
-class SoundLevelMeter(private val listener: Listener): Service(), CoroutineScope {
+class SoundLevelMeter(private val listener: Listener) {
 
     private val SAMPLE_RATE = 44100
     private val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
     private val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
     private val BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
 
-    private val helper by lazy { NotificationHelper(this) }
-    private var currentTime: Int = 0
-    private var startedAtTimestamp: Int = 0
-
     private var isRunning = false
     private lateinit var audioRecord: AudioRecord
+    private val measurementsBuffer = CircularBuffer<Double>(24) // Circular buffer for storing the measurements
 
-    private val handler = Handler(Looper.getMainLooper())
-    private var runnable: Runnable = object : Runnable {
-        override fun run() {
-            currentTime++
-            broadcastUpdate()
-            // Repeat every 1 second
-            handler.postDelayed(this, 1000)
-        }
-    }
-    private val job = Job()
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.IO + job
-
-    var serviceState: TimerState = TimerState.INITIALIZED
+    private val timer = Timer() // Timer for calculating Lday every hour
 
     fun start(context: Context) {
         isRunning = true
@@ -76,6 +51,7 @@ class SoundLevelMeter(private val listener: Listener): Service(), CoroutineScope
             BUFFER_SIZE
         )
         audioRecord.startRecording()
+        startTimerTask()
         Thread {
             while (isRunning) {
                 val buffer = ShortArray(BUFFER_SIZE)
@@ -84,6 +60,7 @@ class SoundLevelMeter(private val listener: Listener): Service(), CoroutineScope
                     val rms = calculateRms(buffer)
                     val spl = calculateSPL(rms)
                     listener.onSPLMeasured(spl)
+                    addMeasurement(spl)
                 }
             }
             audioRecord.stop()
@@ -93,6 +70,7 @@ class SoundLevelMeter(private val listener: Listener): Service(), CoroutineScope
 
     fun stop() {
         isRunning = false
+        stopTimerTask()
     }
 
     private fun calculateRms(buffer: ShortArray): Double {
@@ -105,93 +83,130 @@ class SoundLevelMeter(private val listener: Listener): Service(), CoroutineScope
     }
 
     private fun calculateSPL(rms: Double): Double {
-        val refPressure = 20e-6 // reference sound pressure in Pascals
+        val refPressure = 20 * 10.0.pow(-5) // reference sound pressure in Pascals
         return 20 * log10(rms / refPressure)
+    }
+
+    private fun addMeasurement(measurement: Double) {
+        // Add the SPL measurement to the circular buffer
+        synchronized(measurementsBuffer) {
+            measurementsBuffer.add(measurement)
+        }
+    }
+
+    private fun startTimerTask() {
+        val timerTask = object : TimerTask() {
+            override fun run() {
+                val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                val measurements = measurementsBuffer.toList() // Get the measurements from the buffer
+                if (currentHour in L_DAY_START_HOUR until L_DAY_END_HOUR) {
+                    val lday = calculateLday(measurements) // Calculate Lday
+                    listener.onLdayCalculated(lday)
+                    measurementsBuffer.clear()
+                }
+                if (currentHour in L_EVENING_START_HOUR until L_EVENING_END_HOUR) {
+                    val levening = calculateLevening(measurements)
+                    listener.onLeveningCalculated(levening)
+                    measurementsBuffer.clear()
+                }
+                if (currentHour in L_NIGHT_START_HOUR..23 && currentHour in 0..L_NIGHT_END_HOUR) {
+                    val lnight = calculateLnight(measurements)
+                    listener.onLnightCalculated(lnight)
+                    measurementsBuffer.clear()
+                }
+
+            }
+        }
+        timer.scheduleAtFixedRate(timerTask, 0, 1000 * 60) // Run every minute
+    }
+
+    private fun stopTimerTask() {
+        timer.cancel() // Stop the timer
+        timer.purge()
+    }
+
+    private fun calculateLday(measurements: List<Double>): Double {
+        val weightedMeasurements = measurements.map { calculateWeightedMeasurement(it) }
+        val sumWeightedMeasurements = weightedMeasurements.sum()
+
+        val lDay = 10 * log10(sumWeightedMeasurements)
+
+        if (!lDay.isNaN() && lDay != Double.NEGATIVE_INFINITY && lDay != Double.POSITIVE_INFINITY) {
+            val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+            val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+            database?.child("L_Day")?.setValue(lDay)
+        }
+        return lDay
+    }
+
+    private fun calculateLevening(measurements: List<Double>): Double {
+        val weightedMeasurements = measurements.map { calculateWeightedMeasurement(it) }
+        val sumWeightedMeasurements = weightedMeasurements.sum()
+
+        val lEvening = 10 * log10(sumWeightedMeasurements)
+
+        if (!lEvening.isNaN() && lEvening != Double.NEGATIVE_INFINITY && lEvening != Double.POSITIVE_INFINITY) {
+            val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+            val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+            database?.child("L_Evening")?.setValue(lEvening)
+        }
+        return lEvening
+    }
+
+    private fun calculateLnight(measurements: List<Double>): Double {
+        val weightedMeasurements = measurements.map { calculateWeightedMeasurement(it) }
+        val sumWeightedMeasurements = weightedMeasurements.sum()
+
+        val lNight = 10 * log10(sumWeightedMeasurements)
+
+        if (!lNight.isNaN() && lNight != Double.NEGATIVE_INFINITY && lNight != Double.POSITIVE_INFINITY) {
+            val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+            val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+            database?.child("L_Night")?.setValue(lNight)
+        }
+        return lNight
+    }
+    private fun calculateWeightedMeasurement(spl: Double): Double {
+        val correctionFactor = getCorrectionFactor(spl) // Get the A-weighting correction factor for the given SPL
+        return spl + correctionFactor
+    }
+
+    private fun getCorrectionFactor(spl: Double): Double {
+        // Define the frequency correction factors for A-weighting at different SPL ranges
+        val correctionFactors = mapOf(
+            40.0 to -27.0,
+            50.0 to -16.0,
+            60.0 to -8.0,
+            70.0 to -3.0,
+            80.0 to 0.0,
+            90.0 to 1.2,
+            100.0 to 1.0,
+            110.0 to 0.8,
+            120.0 to 0.7,
+            130.0 to 0.7,
+            140.0 to 0.7
+        )
+
+        // Find the closest lower SPL range in the correction factors map
+        val closestLowerRange = correctionFactors.keys.lastOrNull { it <= spl } ?: correctionFactors.keys.first()
+
+        // Retrieve the correction factor for the closest lower range
+        return correctionFactors[closestLowerRange] ?: 0.0
     }
 
     interface Listener {
         fun onSPLMeasured(spl: Double)
+        fun onLdayCalculated(lday: Double)
+        fun onLeveningCalculated(levening: Double)
+        fun onLnightCalculated(lnight: Double)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-
-        intent?.extras?.run {
-            when (getSerializable(SERVICE_COMMAND) as TimerState) {
-                TimerState.START -> startTimer()
-                TimerState.PAUSE -> pauseTimerService()
-                TimerState.STOP -> endTimerService()
-                else -> return START_NOT_STICKY
-            }
-        }
-        return START_NOT_STICKY
-    }
-
-    override fun onBind(p0: Intent?): IBinder? {
-        return null
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacks(runnable)
-        job.cancel()
-    }
-
-    private fun startTimer() {
-        serviceState = TimerState.START
-
-        startedAtTimestamp = 0
-
-        // publish notification
-        startForeground(NotificationHelper.NOTIFICATION_ID, helper.getNotification())
-        broadcastUpdate()
-
-        startCoroutineTimer()
-    }
-
-    private fun broadcastUpdate() {
-        // update notification
-        if (serviceState == TimerState.START) {
-            // count elapsed time
-            val elapsedTime = (currentTime - startedAtTimestamp)
-
-            // send time to update UI
-            sendBroadcast(
-                Intent(TIMER_ACTION)
-                    .putExtra(NOTIFICATION_TEXT, elapsedTime)
-            )
-
-            helper.updateNotification(
-                getString(R.string.time_is_running, elapsedTime.secondsToTime())
-            )
-        } else if (serviceState == TimerState.PAUSE) {
-            helper.updateNotification(getString(R.string.get_back))
-        }
-    }
-
-    private fun pauseTimerService() {
-        serviceState = TimerState.PAUSE
-        handler.removeCallbacks(runnable)
-        broadcastUpdate()
-    }
-
-    private fun endTimerService() {
-        serviceState = TimerState.STOP
-        handler.removeCallbacks(runnable)
-        broadcastUpdate()
-        stopService()
-    }
-    private fun stopService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            stopForeground(true)
-        } else {
-            stopSelf()
-        }
-    }
-
-    private fun startCoroutineTimer() {
-        launch(coroutineContext) {
-            handler.post(runnable)
-        }
+    companion object {
+        const val L_DAY_START_HOUR = 6
+        const val L_DAY_END_HOUR = 18
+        const val L_EVENING_START_HOUR = 18
+        const val L_EVENING_END_HOUR = 22
+        const val L_NIGHT_START_HOUR = 22
+        const val L_NIGHT_END_HOUR = 6
     }
 }

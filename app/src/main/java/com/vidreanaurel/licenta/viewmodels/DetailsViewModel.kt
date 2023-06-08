@@ -1,6 +1,5 @@
-package com.vidreanaurel.licenta
+package com.vidreanaurel.licenta.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
@@ -8,10 +7,8 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.functions.FirebaseFunctions
 import com.vidreanaurel.licenta.helpers.SensorHelper
 import com.vidreanaurel.licenta.models.UserDetails
-import java.util.ArrayList
 
 class DetailsViewModel: ViewModel() {
 

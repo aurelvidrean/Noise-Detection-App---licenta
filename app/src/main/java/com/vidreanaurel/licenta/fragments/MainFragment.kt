@@ -221,7 +221,7 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
     override fun onSPLMeasured(spl: Double) {
         if (isAdded) {
             requireActivity().runOnUiThread {
-                decibelTextView.text = String.format("%.1f dB", spl)
+                decibelTextView.text = String.format("%.1f Sound Pressure Level", spl)
                 if (spl > x) {
                     x = spl
                 }
@@ -229,7 +229,27 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-        database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
+        database?.child("soundLevel")?.setValue(String.format("%.1f Sound Pressure Level", x))
+    }
+    override fun onLdayCalculated(lday: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
+    }
+
+    override fun onLeveningCalculated(levening: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
+    }
+
+    override fun onLnightCalculated(lnight: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
     }
 
     companion object {

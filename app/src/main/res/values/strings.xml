@@ -29,19 +29,19 @@
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
+    <string name="image_content_description" />
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="time_is_running">Time\'s running! %1$s</string>
+
+    <string name="get_back">Hey you! Get back! :]</string>
     <string-array name="overlap_spinner_titles">
         <item>0%</item>
         <item>25%</item>
         <item>50%</item>
         <item>75%</item>
     </string-array>
-    <!-- TODO: Remove or change this placeholder text -->
     <string-array name="delegate_spinner_titles">
         <item>CPU</item>
         <item>GPU</item>
     </string-array>
-
-    <string name="image_content_description" />
-    <string name="time_is_running">Time\'s running! %1$s</string>
-    <string name="get_back">Hey you! Get back! :]</string>
 </resources>

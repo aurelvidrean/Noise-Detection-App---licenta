@@ -158,6 +158,7 @@ class SensorHelper {
         val dbRef = userId?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
         dbRef?.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                map.clear()
                 if (snapshot.exists()) {
                     val latitude = snapshot.child("LatLng").child("Latitude").getValue(Double::class.java)
                     val longitude = snapshot.child("LatLng").child("Longitude").getValue(Double::class.java)

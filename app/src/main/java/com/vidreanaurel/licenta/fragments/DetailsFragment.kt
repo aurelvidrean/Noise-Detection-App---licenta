@@ -1,7 +1,6 @@
 package com.vidreanaurel.licenta.fragments
 
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,21 +9,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.functions.FirebaseFunctions
-import com.vidreanaurel.licenta.DetailsViewModel
+import com.vidreanaurel.licenta.viewmodels.DetailsViewModel
 import com.vidreanaurel.licenta.R
-import java.util.ArrayList
 import com.vidreanaurel.licenta.adapters.ListItemAdapter
-import com.vidreanaurel.licenta.adapters.ProbabilitiesAdapter
-import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
-import com.vidreanaurel.licenta.helpers.AudioClassificationListener
 import com.vidreanaurel.licenta.helpers.SensorHelper
-import com.vidreanaurel.licenta.models.UserDetails
-import org.tensorflow.lite.support.label.Category
 
 class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
 
@@ -87,5 +76,26 @@ class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
         database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
+    }
+
+    override fun onLdayCalculated(lday: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
+    }
+
+    override fun onLeveningCalculated(levening: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
+    }
+
+    override fun onLnightCalculated(lnight: Double) {
+        if (isAdded) {
+            requireActivity().runOnUiThread {
+            }
+        }
     }
 }

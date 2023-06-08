@@ -10,11 +10,31 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <TextView
+            android:id="@+id/dbTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/map_view"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/margin_default"
+            android:layout_marginStart="@dimen/margin_default"
+            android:visibility="visible"
+            android:textSize="20sp"
+            tools:visibility="visible"
+            tools:text="decibel"/>
+
+        <Button
+            android:id="@+id/logoutbtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/dbTV"
+            android:text="logout"/>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/map_view"
+            android:layout_below="@id/logoutbtn"
             android:layout_marginBottom="@dimen/margin_default"
             android:layout_marginEnd="@dimen/margin_default"
             android:layout_marginStart="@dimen/margin_default"
@@ -31,25 +51,6 @@
             android:layout_height="250dp"
             android:visibility="visible"
             android:contentDescription="@string/image_content_description"/>
-
-        <TextView
-            android:id="@+id/dbTV"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/recycler_view"
-            android:gravity="center"
-            android:layout_marginStart="@dimen/margin_default"
-            android:visibility="visible"
-            android:textSize="20sp"
-            tools:visibility="visible"
-            tools:text="decibel"/>
-
-        <Button
-            android:id="@+id/logoutbtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/dbTV"
-            android:text="logout"/>
 
     </RelativeLayout>
 
