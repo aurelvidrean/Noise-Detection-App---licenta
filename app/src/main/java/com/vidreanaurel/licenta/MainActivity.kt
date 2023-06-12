@@ -1,14 +1,17 @@
 package com.vidreanaurel.licenta
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.auth.FirebaseAuth
 import com.vidreanaurel.licenta.fragments.ChartsFragment
 import com.vidreanaurel.licenta.fragments.DetailsFragment
 import com.vidreanaurel.licenta.fragments.MainFragment
@@ -70,5 +73,19 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             R.id.charts -> supportFragmentManager.beginTransaction().hide(mapFragment).hide(detailsFragment).show(chartsFragment).commit()
         }
         return true
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_logout, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == R.id.logout) {
+            FirebaseAuth.getInstance().signOut()
+            startActivity(Intent(this@MainActivity, RegisterActivity::class.java))
+        }
+        return super.onOptionsItemSelected(item)
     }
 }

@@ -24,17 +24,22 @@
             tools:text="decibel"/>
 
         <Button
-            android:id="@+id/logoutbtn"
+            android:id="@+id/traffic_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/dbTV"
-            android:text="logout"/>
+            android:layout_marginTop="@dimen/margin_default"
+            android:layout_marginStart="@dimen/margin_default"
+            android:visibility="visible"
+            android:textSize="12sp"
+            android:text="Show traffic"/>
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/logoutbtn"
+            android:layout_below="@id/traffic_button"
             android:layout_marginBottom="@dimen/margin_default"
             android:layout_marginEnd="@dimen/margin_default"
             android:layout_marginStart="@dimen/margin_default"

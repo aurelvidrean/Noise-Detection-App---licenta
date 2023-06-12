@@ -2,6 +2,7 @@ package com.vidreanaurel.licenta.fragments
 
 import SoundLevelMeter
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,6 +18,8 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.model.CircleOptions
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.vidreanaurel.licenta.RegisterActivity
@@ -41,8 +44,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var soundLevelMeter: SoundLevelMeter
-
-    lateinit var logoutbutton: Button
 
     private val audioClassificationListener = object : AudioClassificationListener {
         override fun onResult(results: List<Category>, inferenceTime: Long) {
@@ -80,10 +81,8 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
 
         decibelTextView = fragmentMainBinding.dbTV
 
-        logoutbutton = fragmentMainBinding.logoutbtn
-        logoutbutton.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
-            startActivity(Intent(requireContext(), RegisterActivity::class.java))
+        fragmentMainBinding.trafficButton.setOnClickListener {
+            mMap.isTrafficEnabled = true
         }
         return fragmentMainBinding.root
     }
@@ -97,7 +96,6 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
         audioHelper.stopAudioClassification()
         audioHelper.currentModel = AudioClassificationHelper.YAMNET_MODEL
         audioHelper.initClassifier()
-
 
         fragmentMainBinding.bottomSheetLayout.spinnerOverlap.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -225,31 +223,20 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
                 if (spl > x) {
                     x = spl
                 }
+                soundLevelMeter.checkArea(mMap, requireContext())
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-        database?.child("soundLevel")?.setValue(String.format("%.1f Sound Pressure Level", x))
+        database?.child("soundLevel")?.setValue(x)
     }
     override fun onLdayCalculated(lday: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 
     override fun onLeveningCalculated(levening: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 
     override fun onLnightCalculated(lnight: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 
     companion object {

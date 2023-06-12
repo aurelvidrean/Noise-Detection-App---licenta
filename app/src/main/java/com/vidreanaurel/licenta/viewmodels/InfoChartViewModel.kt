@@ -37,8 +37,10 @@ class InfoChartViewModel: ViewModel() {
                         if (latitude != null && longitude != null) {
                             val geocoder = Geocoder(context, Locale.getDefault())
                             val address = geocoder.getFromLocation(latitude, longitude, 1)?.get(0)?.getAddressLine(0)
-                            infoList.add(InfoChartDetails( address, userEmail, listOf(PieEntry(lNight!!.toFloat(), L_NIGHT),
-                                PieEntry(lEvening!!.toFloat(), L_EVENING), PieEntry(lDay!!.toFloat(), L_DAY))))
+                            val entryList = listOf<PieEntry>(PieEntry(lNight?.toFloat() ?: 0f, L_NIGHT),
+                                PieEntry(lEvening?.toFloat() ?: 0f, L_EVENING),
+                                PieEntry(lDay?.toFloat() ?: 0f, L_DAY))
+                                infoList.add(InfoChartDetails(address, userEmail, entryList))
                         }
                     }
                     pieChartEntries.postValue(infoList)

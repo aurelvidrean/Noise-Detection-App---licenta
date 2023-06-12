@@ -1,13 +1,23 @@
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.Circle
+import com.google.android.gms.maps.model.CircleOptions
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.vidreanaurel.licenta.R
 import com.vidreanaurel.licenta.helpers.SensorHelper
 import com.vidreanaurel.licenta.models.CircularBuffer
 import java.util.Calendar
@@ -29,7 +39,7 @@ class SoundLevelMeter(private val listener: Listener) {
     private lateinit var audioRecord: AudioRecord
     private val measurementsBuffer = CircularBuffer<Double>(24) // Circular buffer for storing the measurements
 
-    private val timer = Timer() // Timer for calculating Lday every hour
+    private var timer: Timer? = null // Timer for calculating Lday every hour
 
     fun start(context: Context) {
         isRunning = true
@@ -95,34 +105,37 @@ class SoundLevelMeter(private val listener: Listener) {
     }
 
     private fun startTimerTask() {
-        val timerTask = object : TimerTask() {
-            override fun run() {
-                val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-                val measurements = measurementsBuffer.toList() // Get the measurements from the buffer
-                if (currentHour in L_DAY_START_HOUR until L_DAY_END_HOUR) {
-                    val lday = calculateLday(measurements) // Calculate Lday
-                    listener.onLdayCalculated(lday)
-                    measurementsBuffer.clear()
-                }
-                if (currentHour in L_EVENING_START_HOUR until L_EVENING_END_HOUR) {
-                    val levening = calculateLevening(measurements)
-                    listener.onLeveningCalculated(levening)
-                    measurementsBuffer.clear()
-                }
-                if (currentHour in L_NIGHT_START_HOUR..23 && currentHour in 0..L_NIGHT_END_HOUR) {
-                    val lnight = calculateLnight(measurements)
-                    listener.onLnightCalculated(lnight)
-                    measurementsBuffer.clear()
-                }
+        if (timer == null) {
+            timer = Timer()
+            val timerTask = object : TimerTask() {
+                override fun run() {
+                    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                    val measurements = measurementsBuffer.toList() // Get the measurements from the buffer
+                    if (currentHour in L_DAY_START_HOUR until L_DAY_END_HOUR) {
+                        val lday = calculateLday(measurements) // Calculate Lday
+                        listener.onLdayCalculated(lday)
+                        measurementsBuffer.clear()
+                    }
+                    if (currentHour in L_EVENING_START_HOUR until L_EVENING_END_HOUR) {
+                        val levening = calculateLevening(measurements)
+                        listener.onLeveningCalculated(levening)
+                        measurementsBuffer.clear()
+                    }
+                    if (currentHour in L_NIGHT_START_HOUR..23 && currentHour in 0..L_NIGHT_END_HOUR) {
+                        val lnight = calculateLnight(measurements)
+                        listener.onLnightCalculated(lnight)
+                        measurementsBuffer.clear()
+                    }
 
+                }
             }
+            timer?.scheduleAtFixedRate(timerTask, 0, 1000 * 60) // Run every minute
         }
-        timer.scheduleAtFixedRate(timerTask, 0, 1000 * 60) // Run every minute
     }
 
     private fun stopTimerTask() {
-        timer.cancel() // Stop the timer
-        timer.purge()
+        timer?.cancel() // Stop the timer
+        timer?.purge()
     }
 
     private fun calculateLday(measurements: List<Double>): Double {
@@ -193,6 +206,52 @@ class SoundLevelMeter(private val listener: Listener) {
         // Retrieve the correction factor for the closest lower range
         return correctionFactors[closestLowerRange] ?: 0.0
     }
+
+    fun checkArea(map: GoogleMap, context: Context) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val dbRef = userId?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+        dbRef?.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                        val latitude = snapshot.child("LatLng").child("Latitude").getValue(Double::class.java)
+                        val longitude = snapshot.child("LatLng").child("Longitude").getValue(Double::class.java)
+                        val spl = snapshot.child("soundLevel").getValue(Double::class.java)
+                        if (latitude != null && longitude != null && spl != null) {
+                            val latLng = LatLng(latitude, longitude)
+
+                            val weightedMeasurement = calculateWeightedMeasurement(spl)
+                            val noiseFactor = 10 * log10(weightedMeasurement)
+                            Log.d("VALELEUUUUUUUU", noiseFactor.toString())
+                            when (noiseFactor) {
+                                in 0.0..30.0 -> drawCircle(latLng, map, ContextCompat.getColor(context, R.color.quiet_zone_color))
+                                in 30.0..50.0 -> drawCircle(latLng, map, ContextCompat.getColor(context, R.color.traffic_zone_color))
+                                in 50.0..200.0 -> drawCircle(latLng, map, ContextCompat.getColor(context, R.color.danger_zone_color))
+                                else -> drawCircle(latLng, map, Color.TRANSPARENT).remove()
+                            }
+                        }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+
+        })
+
+    }
+
+
+    private fun drawCircle(point: LatLng, map: GoogleMap, color: Int): Circle {
+        // Instantiating CircleOptions to draw a circle around the marker
+        val circleOptions = CircleOptions()
+        circleOptions.center(point)
+        circleOptions.radius(10.0)
+        circleOptions.strokeColor(Color.BLACK)
+        circleOptions.fillColor(color)
+        circleOptions.strokeWidth(2f)
+        return map.addCircle(circleOptions)
+    }
+
 
     interface Listener {
         fun onSPLMeasured(spl: Double)

@@ -68,4 +68,9 @@
         <item>@color/background_amber</item>
         <item>@color/background_orange</item>
     </integer-array>
+
+
+    <color name="quiet_zone_color">#22D2DECC</color>
+    <color name="traffic_zone_color">#22FAF752</color>
+    <color name="danger_zone_color">#22FF0F03</color>
 </resources>

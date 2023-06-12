@@ -136,6 +136,7 @@ class SensorHelper {
                 if (task.isSuccessful) {
                     val result = task.result?.data as List<HashMap<String, String>>?
                     if (result != null) {
+                        map.clear()
                         for (user in result) {
                             val uid = user["uid"] as String?
                             val email = user["email"] as String?
@@ -158,7 +159,6 @@ class SensorHelper {
         val dbRef = userId?.let { FirebaseDatabase.getInstance(DB_URL).getReference("User").child(it) }
         dbRef?.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                map.clear()
                 if (snapshot.exists()) {
                     val latitude = snapshot.child("LatLng").child("Latitude").getValue(Double::class.java)
                     val longitude = snapshot.child("LatLng").child("Longitude").getValue(Double::class.java)
@@ -168,11 +168,8 @@ class SensorHelper {
                             MarkerOptions().position(marker).title("Marker")
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
                         )
-                        drawCircle(marker, map)
                         if (isCurrentUser) {
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,12f))
-                            map.animateCamera(CameraUpdateFactory.zoomIn())
-                            map.animateCamera(CameraUpdateFactory.zoomTo(12f), 2000, null)
+                            moveToUserLocation(map, marker)
                         }
                     }
                 }
@@ -184,17 +181,11 @@ class SensorHelper {
         })
     }
 
-    private fun drawCircle(point: LatLng, map: GoogleMap) {
-        // Instantiating CircleOptions to draw a circle around the marker
-        val circleOptions = CircleOptions()
-        circleOptions.center(point)
-        circleOptions.radius(300.0)
-        circleOptions.strokeColor(Color.BLACK)
-        circleOptions.fillColor(Color.YELLOW)
-        circleOptions.strokeWidth(2f)
-        map.addCircle(circleOptions)
+    private fun moveToUserLocation(map: GoogleMap, userLatLng: LatLng) {
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 18f))
+        map.animateCamera(CameraUpdateFactory.zoomIn())
+        map.animateCamera(CameraUpdateFactory.zoomTo(18f))
     }
-
     fun getMarkerColorByDBLevel(): BitmapDescriptor {
         return when {
             dbLevel < 120 -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
