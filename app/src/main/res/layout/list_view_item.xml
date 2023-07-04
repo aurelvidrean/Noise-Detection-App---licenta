@@ -26,7 +26,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginStart="@dimen/margin_default"
         android:layout_marginTop="@dimen/margin_default"
-        tools:text="Email"/>
+        tools:text="test@email.com"/>
 
     <TextView
         android:id="@+id/user_location"
@@ -71,7 +71,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="@dimen/margin_default"
         android:layout_marginEnd="@dimen/margin_default"
-        tools:text="--"/>
+        tools:text="01.05.2023 16:09:33"/>
 
     <TextView
         android:id="@+id/car_detected_label"
@@ -93,5 +93,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginEnd="@dimen/margin_default"
         android:layout_marginVertical="@dimen/margin_default"
-        tools:text="--"/>
+        tools:text="01.05.2023 16:09:33"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

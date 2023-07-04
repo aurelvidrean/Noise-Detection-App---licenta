@@ -221,7 +221,6 @@ class SoundLevelMeter(private val listener: Listener) {
 
                             val weightedMeasurement = calculateWeightedMeasurement(spl)
                             val noiseFactor = 10 * log10(weightedMeasurement)
-                            Log.d("VALELEUUUUUUUU", noiseFactor.toString())
                             when (noiseFactor) {
                                 in 0.0..30.0 -> drawCircle(latLng, map, ContextCompat.getColor(context, R.color.quiet_zone_color))
                                 in 30.0..50.0 -> drawCircle(latLng, map, ContextCompat.getColor(context, R.color.traffic_zone_color))

@@ -129,8 +129,6 @@ class SensorHelper {
         val functions = FirebaseFunctions.getInstance()
         val getAllUsers = functions.getHttpsCallable("getAllUsers")
 
-        val userList: MutableList<String> = mutableListOf()
-
         getAllUsers.call()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {

@@ -15,7 +15,7 @@ import com.google.firebase.functions.FirebaseFunctions
 import com.vidreanaurel.licenta.models.InfoChartDetails
 import java.util.Locale
 
-class InfoChartViewModel: ViewModel() {
+class InfoChartViewModel : ViewModel() {
 
     val pieChartEntries = MutableLiveData<List<InfoChartDetails>>(null)
 
@@ -37,10 +37,12 @@ class InfoChartViewModel: ViewModel() {
                         if (latitude != null && longitude != null) {
                             val geocoder = Geocoder(context, Locale.getDefault())
                             val address = geocoder.getFromLocation(latitude, longitude, 1)?.get(0)?.getAddressLine(0)
-                            val entryList = listOf<PieEntry>(PieEntry(lNight?.toFloat() ?: 0f, L_NIGHT),
+                            val entryList = listOf<PieEntry>(
+                                PieEntry(lNight?.toFloat() ?: 0f, L_NIGHT),
                                 PieEntry(lEvening?.toFloat() ?: 0f, L_EVENING),
-                                PieEntry(lDay?.toFloat() ?: 0f, L_DAY))
-                                infoList.add(InfoChartDetails(address, userEmail, entryList))
+                                PieEntry(lDay?.toFloat() ?: 0f, L_DAY)
+                            )
+                            infoList.add(InfoChartDetails(address, userEmail, entryList))
                         }
                     }
                     pieChartEntries.postValue(infoList)

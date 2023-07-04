@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
@@ -28,6 +29,8 @@ import com.vidreanaurel.licenta.databinding.FragmentMainBinding
 import com.vidreanaurel.licenta.helpers.AudioClassificationHelper
 import com.vidreanaurel.licenta.helpers.AudioClassificationListener
 import com.vidreanaurel.licenta.helpers.SensorHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.tensorflow.lite.support.label.Category
 
 class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
@@ -83,6 +86,10 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
 
         fragmentMainBinding.trafficButton.setOnClickListener {
             mMap.isTrafficEnabled = true
+        }
+
+        fragmentMainBinding.hideTraffic.setOnClickListener {
+            mMap.isTrafficEnabled = false
         }
         return fragmentMainBinding.root
     }
@@ -218,12 +225,12 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
 
     override fun onSPLMeasured(spl: Double) {
         if (isAdded) {
-            requireActivity().runOnUiThread {
+            lifecycleScope.launch(Dispatchers.Main) {
                 decibelTextView.text = String.format("%.1f Sound Pressure Level", spl)
                 if (spl > x) {
                     x = spl
                 }
-                soundLevelMeter.checkArea(mMap, requireContext())
+              //  soundLevelMeter.checkArea(mMap, requireContext())
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid

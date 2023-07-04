@@ -1,6 +1,7 @@
 package com.vidreanaurel.licenta.adapters
 
 import android.content.res.ColorStateList
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,9 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
         return ViewHolder(binding)
     }
 
+
+    var carDetectionMade = 0
+    var personDetectionMade = 0
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val category = categoryList[position]
         if (category.label.equals(CAR) || category.label.equals(MOTOR_VEHICLE) || category.label.equals(CAR_PASSING_BY) || category.label.equals
@@ -37,6 +41,8 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
             val userConnected = FirebaseAuth.getInstance().currentUser?.uid
             val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
             database?.child("CarDetection")?.setValue(carDetectionEvent)
+
+            Log.d("Test Car Detection during 1 minute on 0.8 threshold", "Car detected ${++carDetectionMade} times")
         }
         if (category.label.equals(SPEECH)) {
             holder.bind(SPEECH, category.score, category.index)
@@ -48,6 +54,8 @@ class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.ViewHolde
             val userConnected = FirebaseAuth.getInstance().currentUser?.uid
             val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
             database?.child("PersonDetection")?.setValue(personDetectionEvent)
+
+            Log.d("Test Person Detection during 1 minute on 0.3 threshold", "Person detected ${++personDetectionMade} times")
         }
     }
 

@@ -34,6 +34,19 @@
             android:textSize="12sp"
             android:text="Show traffic"/>
 
+        <Button
+            android:id="@+id/hide_traffic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/traffic_button"
+            android:layout_marginStart="@dimen/margin_default"
+            android:layout_marginTop="@dimen/margin_default"
+            android:layout_below="@id/dbTV"
+            android:visibility="visible"
+            android:textSize="12sp"
+            android:text="Hide traffic"/>
+
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"

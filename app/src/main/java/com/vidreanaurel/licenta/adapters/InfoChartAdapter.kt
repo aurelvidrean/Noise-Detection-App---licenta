@@ -63,7 +63,7 @@ class ListInfoChartViewHolder(itemView: View): RecyclerView.ViewHolder(itemView)
         pieChart.data = PieData(pieDataSet)
         pieChart.animate()
         pieChart.description = Description().apply {
-            text = "Chart based on average noise for each moment of the day"
+            text = "\n\nChart based on average noise for each moment of the day"
         }
         pieChart.data.notifyDataChanged()
         pieChart.notifyDataSetChanged()

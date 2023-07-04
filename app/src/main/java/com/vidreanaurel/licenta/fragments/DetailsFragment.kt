@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
@@ -14,6 +15,8 @@ import com.vidreanaurel.licenta.viewmodels.DetailsViewModel
 import com.vidreanaurel.licenta.R
 import com.vidreanaurel.licenta.adapters.ListItemAdapter
 import com.vidreanaurel.licenta.helpers.SensorHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
 
@@ -40,7 +43,6 @@ class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
 
         val detailsAdapter = ListItemAdapter()
 
-        //recyclerView = fragmentMainBinding.recyclerView2
         recyclerView.adapter = detailsAdapter
         recyclerView.layoutManager = LinearLayoutManager(view.context)
 
@@ -66,36 +68,35 @@ class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
 
     var x = 0.0
     override fun onSPLMeasured(spl: Double) {
+//        if (isAdded) {
+//            requireActivity().runOnUiThread {
+//                if (spl > x) {
+//                    x = spl
+//                }
+//            }
+//        }
+//        val userConnected = FirebaseAuth.getInstance().currentUser?.uid
+//        val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
+//        database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
         if (isAdded) {
-            requireActivity().runOnUiThread {
+            lifecycleScope.launch(Dispatchers.Main) {
                 if (spl > x) {
                     x = spl
                 }
+                //  soundLevelMeter.checkArea(mMap, requireContext())
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-        database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
+        database?.child("soundLevel")?.setValue(x)
     }
 
     override fun onLdayCalculated(lday: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 
     override fun onLeveningCalculated(levening: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 
     override fun onLnightCalculated(lnight: Double) {
-        if (isAdded) {
-            requireActivity().runOnUiThread {
-            }
-        }
     }
 }
