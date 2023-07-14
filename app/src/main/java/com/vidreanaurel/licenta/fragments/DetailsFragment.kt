@@ -68,27 +68,16 @@ class DetailsFragment : Fragment(), SoundLevelMeter.Listener {
 
     var x = 0.0
     override fun onSPLMeasured(spl: Double) {
-//        if (isAdded) {
-//            requireActivity().runOnUiThread {
-//                if (spl > x) {
-//                    x = spl
-//                }
-//            }
-//        }
-//        val userConnected = FirebaseAuth.getInstance().currentUser?.uid
-//        val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-//        database?.child("soundLevel")?.setValue(String.format("%.1f dB", x))
         if (isAdded) {
             lifecycleScope.launch(Dispatchers.Main) {
                 if (spl > x) {
                     x = spl
                 }
-                //  soundLevelMeter.checkArea(mMap, requireContext())
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-        database?.child("soundLevel")?.setValue(x)
+        database?.child("soundLevel")?.setValue(spl)
     }
 
     override fun onLdayCalculated(lday: Double) {

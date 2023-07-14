@@ -163,7 +163,7 @@ class SoundLevelMeter(private val listener: Listener) {
             val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
             database?.child("L_Evening")?.setValue(lEvening)
         }
-        return lEvening
+        return lEvening - 5.0
     }
 
     private fun calculateLnight(measurements: List<Double>): Double {
@@ -177,7 +177,7 @@ class SoundLevelMeter(private val listener: Listener) {
             val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
             database?.child("L_Night")?.setValue(lNight)
         }
-        return lNight
+        return lNight - 10.0
     }
     private fun calculateWeightedMeasurement(spl: Double): Double {
         val correctionFactor = getCorrectionFactor(spl) // Get the A-weighting correction factor for the given SPL

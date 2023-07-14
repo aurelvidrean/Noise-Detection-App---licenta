@@ -31,6 +31,8 @@ class SensorHelper {
 
     private var dbLevel: Double = 0.0
 
+    private var isAlreadyLocated: Boolean = false
+
     fun instanceLocationRequest(locationRequest: LocationRequest) {
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         locationRequest.interval = 5000L
@@ -166,7 +168,7 @@ class SensorHelper {
                             MarkerOptions().position(marker).title("Marker")
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
                         )
-                        if (isCurrentUser) {
+                        if (isCurrentUser && !isAlreadyLocated) {
                             moveToUserLocation(map, marker)
                         }
                     }
@@ -183,6 +185,7 @@ class SensorHelper {
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 18f))
         map.animateCamera(CameraUpdateFactory.zoomIn())
         map.animateCamera(CameraUpdateFactory.zoomTo(18f))
+        isAlreadyLocated = true
     }
     fun getMarkerColorByDBLevel(): BitmapDescriptor {
         return when {

@@ -230,12 +230,11 @@ class MainFragment : Fragment(), OnMapReadyCallback, SoundLevelMeter.Listener {
                 if (spl > x) {
                     x = spl
                 }
-              //  soundLevelMeter.checkArea(mMap, requireContext())
             }
         }
         val userConnected = FirebaseAuth.getInstance().currentUser?.uid
         val database = userConnected?.let { FirebaseDatabase.getInstance(SensorHelper.DB_URL).getReference("User").child(it) }
-        database?.child("soundLevel")?.setValue(x)
+        database?.child("soundLevel")?.setValue(spl)
     }
     override fun onLdayCalculated(lday: Double) {
     }
